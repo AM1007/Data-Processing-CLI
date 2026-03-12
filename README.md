@@ -1,7 +1,5 @@
 # Data-Processing-CLI
 
-# Data Processing CLI
-
 An interactive command-line tool for file system navigation and data processing, built with Node.js 24 and zero external dependencies.
 
 ## Requirements
