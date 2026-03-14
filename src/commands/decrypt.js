@@ -1,4 +1,3 @@
-import fs from 'fs/promises';
 import { open } from 'fs/promises';
 import crypto from 'crypto';
 import { createReadStream, createWriteStream } from 'fs';
@@ -12,15 +11,14 @@ export const decrypt = async (inputPath, outputPath, password) => {
 
     const headerBuf = Buffer.alloc(28);
     await fileHandle.read(headerBuf, 0, 28, 0);
+
+    const authTagBuf = Buffer.alloc(16);
+    await fileHandle.read(authTagBuf, 0, 16, fileSize - 16);
+
     await fileHandle.close();
 
     const salt = headerBuf.subarray(0, 16);
     const iv = headerBuf.subarray(16, 28);
-
-    const tagHandle = await open(inputPath, 'r');
-    const authTagBuf = Buffer.alloc(16);
-    await tagHandle.read(authTagBuf, 0, 16, fileSize - 16);
-    await tagHandle.close();
 
     const key = crypto.scryptSync(password, salt, 32);
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);

@@ -6,25 +6,27 @@ export const count = (inputPath) => {
     let lines = 0;
     let words = 0;
     let characters = 0;
-    let lastCharWasSpace = true;
+    let inWord = false;
 
     readStream.on('data', (chunk) => {
       characters += chunk.length;
-      lines += chunk.split('\n').length - 1;
 
-      const tokens = chunk.split(/\s+/);
+      for (let i = 0; i < chunk.length; i++) {
+        const ch = chunk[i];
 
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (token.length === 0) continue;
+        if (ch === '\n') {
+          lines++;
+        }
 
-        if (i === 0 && !lastCharWasSpace) {
-        } else {
+        const isWhitespace = ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r';
+
+        if (!isWhitespace && !inWord) {
           words++;
+          inWord = true;
+        } else if (isWhitespace) {
+          inWord = false;
         }
       }
-
-      lastCharWasSpace = /\s$/.test(chunk);
     });
 
     readStream.on('error', reject);

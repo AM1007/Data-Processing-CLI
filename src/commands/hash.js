@@ -4,18 +4,17 @@ import { pipeline } from 'stream/promises';
 import fs from 'fs/promises';
 
 export const hash = async (inputPath, algorithm, save) => {
-  try{
+  try {
     const hashStream = crypto.createHash(algorithm);
     const readStream = createReadStream(inputPath);
     await pipeline(readStream, hashStream);
     const result = hashStream.digest('hex');
-    const hashFilePath = `${inputPath}.${algorithm}`;
     if (save) {
+      const hashFilePath = `${inputPath}.${algorithm}`;
       await fs.writeFile(hashFilePath, result);
     }
-    console.log(`${algorithm}: ${result}`);
     return result;
-  }catch{
+  } catch {
     throw new Error();
   }
-}  
+};
