@@ -1,28 +1,39 @@
 import fs from 'fs/promises';
+import { open } from 'fs/promises';
 import crypto from 'crypto';
-import { createWriteStream } from 'fs';
+import { createReadStream, createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
-import { Readable } from 'stream';
-
 
 export const decrypt = async (inputPath, outputPath, password) => {
-   try{
-    const fileBuffer = await fs.readFile(inputPath);
+  try {
+    const fileHandle = await open(inputPath, 'r');
+    const stat = await fileHandle.stat();
+    const fileSize = stat.size;
 
-    const salt = fileBuffer.subarray(0, 16);
-    const iv = fileBuffer.subarray(16, 28);
-    const authTag = fileBuffer.subarray(fileBuffer.length - 16);
-    const ciphertext = fileBuffer.subarray(28, fileBuffer.length - 16);
+    const headerBuf = Buffer.alloc(28);
+    await fileHandle.read(headerBuf, 0, 28, 0);
+    await fileHandle.close();
+
+    const salt = headerBuf.subarray(0, 16);
+    const iv = headerBuf.subarray(16, 28);
+
+    const tagHandle = await open(inputPath, 'r');
+    const authTagBuf = Buffer.alloc(16);
+    await tagHandle.read(authTagBuf, 0, 16, fileSize - 16);
+    await tagHandle.close();
 
     const key = crypto.scryptSync(password, salt, 32);
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(authTag);
+    decipher.setAuthTag(authTagBuf);
 
-    const readableStream = Readable.from(ciphertext);
+    const readStream = createReadStream(inputPath, {
+      start: 28,
+      end: fileSize - 17,
+    });
     const writeStream = createWriteStream(outputPath);
-    await pipeline(readableStream, decipher, writeStream);
-  }catch{
+
+    await pipeline(readStream, decipher, writeStream);
+  } catch {
     throw new Error();
   }
-}
-
+};

@@ -21,13 +21,14 @@ export const handleCommand = async (command) => {
     goUp();
     return;
   } else if (name === 'cd') {
-    if (!parsedArgs.path) {
+    const targetPath = parts[1];
+    if (!targetPath) {
       console.log('Invalid input');
       return;
     }
-  try{
-    await changeDir(parsedArgs.path)
-    }catch{
+    try {
+      await changeDir(targetPath);
+    } catch {
       console.log('Operation failed');
     }
   } else if (name === 'ls') {

@@ -13,7 +13,6 @@ const stats = {
 };
 
 let remainder = '';
-let isFirstLine = true;
 
 readStream.on('data', (chunk) => {
   remainder += chunk;
@@ -23,11 +22,7 @@ readStream.on('data', (chunk) => {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    if (isFirstLine && start > 0) {
-      isFirstLine = false;
-      continue;
-    }
-    isFirstLine = false;
+
     const parts = trimmed.split(' ');
     const level = parts[1];
     const statusCode = parseInt(parts[3]);
@@ -49,5 +44,5 @@ readStream.on('end', () => {
 });
 
 readStream.on('error', (err) => {
-  console.log('Stream error:', err.message);
+  console.error('Stream error:', err.message);
 });

@@ -43,6 +43,19 @@ export const csvToJson = async (inputPath, outputPath) => {
       callback();
     },
     flush(callback) {
+      if (remainder.trim() && headers) {
+        const values = remainder.trim().split(',');
+        const obj = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i];
+        });
+        const json = JSON.stringify(obj, null, 2);
+        if (isFirst) {
+          this.push('[\n' + json);
+        } else {
+          this.push(',\n' + json);
+        }
+      }
       this.push('\n]');
       callback();
     }
@@ -54,4 +67,3 @@ export const csvToJson = async (inputPath, outputPath) => {
     throw new Error();
   }
 };
-
