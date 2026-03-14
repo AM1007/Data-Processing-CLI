@@ -1,25 +1,44 @@
-import { createWriteStream } from 'fs';
+import { createReadStream, createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
-import { Readable } from 'stream';
-import fs from 'fs/promises';
+import { Transform } from 'stream';
 
 export const jsonToCsv = async (inputPath, outputPath) => {
-  const content = await fs.readFile(inputPath, 'utf-8');
-  const data = JSON.parse(content);
-  const headers = Object.keys(data[0]);
-
-  const headerLine = headers.join(',');
-  const rows = data.map(obj => headers.map(h => obj[h]).join(','));
-
-  const csvContent = [headerLine, ...rows].join('\n');
-  const readableStream = Readable.from([csvContent]);
+  const readStream = createReadStream(inputPath, { encoding: 'utf-8' });
   const writeStream = createWriteStream(outputPath);
 
-    try {
-      await pipeline(readableStream, writeStream);
-    } catch {
-      throw new Error();
+  let buffer = '';
+  let headersWritten = false;
+
+  const transformStream = new Transform({
+    transform(chunk, encoding, callback) {
+      buffer += chunk;
+      callback();
+    },
+    flush(callback) {
+      try {
+        const data = JSON.parse(buffer);
+        const headers = Object.keys(data[0]);
+
+        if (!headersWritten) {
+          this.push(headers.join(',') + '\n');
+          headersWritten = true;
+        }
+
+        for (const obj of data) {
+          const row = headers.map(h => obj[h]).join(',');
+          this.push(row + '\n');
+        }
+
+        callback();
+      } catch {
+        callback(new Error());
+      }
     }
-}
+  });
 
-
+  try {
+    await pipeline(readStream, transformStream, writeStream);
+  } catch {
+    throw new Error();
+  }
+};

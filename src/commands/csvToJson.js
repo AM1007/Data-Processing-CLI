@@ -56,7 +56,13 @@ export const csvToJson = async (inputPath, outputPath) => {
           this.push(',\n' + json);
         }
       }
-      this.push('\n]');
+
+      if (!isFirst) {
+        this.push('\n]');
+      } else {
+        this.push('[]');
+      }
+
       callback();
     }
   });

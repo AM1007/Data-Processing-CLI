@@ -11,11 +11,16 @@ export const encrypt = async (inputPath, outputPath, password) => {
   const readStream = createReadStream(inputPath);
   const writeStream = createWriteStream(outputPath);
 
-  writeStream.write(salt);
-  writeStream.write(iv);
+  try {
+    await new Promise((resolve, reject) => {
+      writeStream.write(Buffer.concat([salt, iv]), (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
 
-  try{
-  await pipeline(readStream, cipher, writeStream, { end: false });
+    await pipeline(readStream, cipher, writeStream, { end: false });
+
     const authTag = cipher.getAuthTag();
     await new Promise((resolve, reject) => {
       writeStream.end(authTag, (err) => {
@@ -23,7 +28,7 @@ export const encrypt = async (inputPath, outputPath, password) => {
         else resolve();
       });
     });
-  } catch{
-    throw new Error()
+  } catch {
+    throw new Error();
   }
-}
+};
